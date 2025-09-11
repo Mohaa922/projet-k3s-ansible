@@ -1,0 +1,75 @@
+---
+
+- name: Installer client NFS
+
+  become: true
+
+  apt:
+
+    name: nfs-common
+
+    state: present
+
+    update_cache: yes
+
+- name: Créer points de montage
+
+  become: true
+
+  file:
+
+    path: "{{ item.mountpoint }}"
+
+    state: directory
+
+  loop: "{{ nfs_mounts }}"
+
+- name: Monter les partages NFS
+
+  become: true
+
+  mount:
+
+    path: "{{ item.mountpoint }}"
+
+    src: "{{ item.server }}:{{ item.remote }}"
+
+    fstype: nfs
+
+    opts: "{{ item.opts }}"
+
+    state: mounted
+
+  loop: "{{ nfs_mounts }}"
+
+- name: Créer fichier test
+
+  become: true
+
+  copy:
+
+    dest: "{{ item.mountpoint }}/test-from-{{ inventory_hostname }}.txt"
+
+    content: "Hello from {{ inventory_hostname }} at {{ ansible_date_time.iso8601 }}\n"
+
+  loop: "{{ nfs_mounts }}"
+
+- name: Lister contenu du montage
+
+  become: true
+
+  command: "ls -l {{ item.mountpoint }}"
+
+  loop: "{{ nfs_mounts }}"
+
+  register: ls_out
+
+  changed_when: false
+
+- name: Afficher résultat
+
+  debug:
+
+    var: ls_out.results | map(attribute='stdout') | list
+
+

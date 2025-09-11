@@ -1,0 +1,12 @@
+---
+- name: Déployer serveur NFS
+  hosts: nfs_server
+  gather_facts: yes
+  roles:
+   - nfs_server
+
+- name: Déployer clients NFS et tester
+  hosts: nfs_clients
+  gather_facts: yes
+  roles:
+   - nfs_client

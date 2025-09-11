@@ -1,0 +1,59 @@
+---
+
+- name: Installer NFS server
+
+  become: true
+
+  apt:
+
+    name: nfs-kernel-server
+
+    state: present
+
+    update_cache: yes
+
+- name: Créer les dossiers d'export
+
+  become: true
+
+  file:
+
+    path: "{{ item.path }}"
+
+    state: directory
+
+    owner: "{{ nfs_export_owner }}"
+
+    group: "{{ nfs_export_group }}"
+
+    mode: "{{ nfs_export_mode }}"
+
+  loop: "{{ nfs_exports }}"
+
+- name: Générer /etc/exports
+
+  become: true
+
+  template:
+
+    src: exports.j2
+
+    dest: /etc/exports
+
+  notify:
+
+    - reload nfs exports
+
+- name: Activer et démarrer nfs-server
+
+  become: true
+
+  service:
+
+    name: nfs-kernel-server
+
+    state: started
+
+    enabled: true
+
+

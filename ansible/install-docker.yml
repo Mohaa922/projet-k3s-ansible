@@ -1,0 +1,64 @@
+---
+- name: Installation propre de Docker
+  hosts: all
+  become: yes
+
+  tasks:
+
+    - name: Supprimer toutes les entrées Docker dans les sources APT
+      shell: |
+        grep -lr "download.docker.com" /etc/apt/sources.list /etc/apt/sources.list.d/ | xargs -r rm -f
+      args:
+        executable: /bin/bash
+
+    - name: Supprimer ancienne clé GPG Docker
+      file:
+        path: /etc/apt/keyrings/docker.gpg
+        state: absent
+
+    - name: Créer le répertoire pour les clés APT si nécessaire
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Importer la clé GPG Docker et la convertir en .gpg (format binaire)
+      shell: |
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+      args:
+        creates: /etc/apt/keyrings/docker.gpg
+
+    - name: Installer les dépendances APT nécessaires
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: yes
+
+    - name: Ajouter le dépôt officiel Docker proprement
+      copy:
+        dest: /etc/apt/sources.list.d/docker.list
+        content: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable\n"
+        mode: '0644'
+
+    - name: Mettre à jour le cache APT
+      apt:
+        update_cache: yes
+
+    - name: Installer Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+
+    - name: Activer et démarrer Docker
+      systemd:
+        name: docker
+        enabled: yes
+        state: started

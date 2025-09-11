@@ -1,0 +1,102 @@
+---
+# Play 1 : Master – installe K3s et expose token + IP aux workers
+- name: Installer K3s serveur sur le master
+  hosts: master
+  become: yes
+  gather_facts: yes
+  vars:
+    # Optionnel : ajoute des flags K3s ici (ex: désactiver Traefik)
+    # install_k3s_exec: "server --disable traefik"
+    install_k3s_exec: "server"
+  tasks:
+    - name: Vérifier si le service k3s (server) existe déjà
+      stat:
+        path: /etc/systemd/system/k3s.service
+      register: server_service
+
+    - name: Installer K3s serveur (join API)
+      shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="{{ install_k3s_exec }}" sh -
+      when: not server_service.stat.exists
+
+    - name: Attendre que le token soit présent
+      wait_for:
+        path: /var/lib/rancher/k3s/server/node-token
+        timeout: 120
+
+    - name: Récupérer le token k3s (b64 → clair)
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: node_token_b64
+
+    - name: Stocker le token en clair dans un fact (accessible aux workers)
+      set_fact:
+        k3s_token: "{{ node_token_b64.content | b64decode | trim }}"
+
+    - name: Enregistrer le token dans un fichier local (optionnel)
+      copy:
+        content: "{{ k3s_token }}"
+        dest: ./k3s_token.txt
+      delegate_to: localhost
+
+    - name: Déterminer l'adresse du master pour les agents
+      set_fact:
+        master_api_ip: "{{ hostvars[inventory_hostname].ansible_host | default(ansible_default_ipv4.address) }}"
+
+    - name: Vérifier que kubectl fonctionne côté master
+      shell: /usr/local/bin/kubectl get nodes
+      register: kget_nodes
+      changed_when: false
+
+    - debug:
+        var: kget_nodes.stdout
+
+    # Optionnel : donner kubectl à l'utilisateur courant sans sudo
+    - name: Préparer kubeconfig utilisateur (optionnel)
+      block:
+        - file:
+            path: "{{ ansible_env.HOME }}/.kube"
+            state: directory
+            mode: "0755"
+        - copy:
+            src: /etc/rancher/k3s/k3s.yaml
+            dest: "{{ ansible_env.HOME }}/.kube/config"
+            remote_src: yes
+        - file:
+            path: "{{ ansible_env.HOME }}/.kube/config"
+            owner: "{{ ansible_user_id }}"
+            group: "{{ ansible_user_gid | default(ansible_user_id) }}"
+            mode: "0600"
+      when: server_service.stat.exists or kget_nodes is defined
+
+# Play 2 : Workers – rejoignent le cluster via K3S_URL + K3S_TOKEN
+- name: Installer K3s agents sur les workers
+  hosts: workers        # ← Assure-toi d'avoir ce groupe dans inventory.ini
+  become: yes
+  gather_facts: no
+  vars:
+    master_node: "{{ groups['master'][0] }}"   # ← récupère automatiquement le nom (ex: k3s-master)
+  tasks:
+    - name: Installer dépendances (curl)
+      apt:
+        name: curl
+        state: present
+        update_cache: yes
+
+    - name: Vérifier si le service k3s-agent existe déjà
+      stat:
+        path: /etc/systemd/system/k3s-agent.service
+      register: agent_service
+
+    - name: Installer K3s agent (join cluster)
+      shell: |
+        curl -sfL https://get.k3s.io | \
+        K3S_URL="https://{{ hostvars[master_node].master_api_ip | default(hostvars[master_node].ansible_host) }}:6443" \
+        K3S_TOKEN="{{ hostvars[master_node].k3s_token }}" sh -
+      when: not agent_service.stat.exists
+
+    - name: S’assurer que k3s-agent tourne et démarre au boot
+      systemd:
+        name: k3s-agent
+        state: started
+        enabled: yes

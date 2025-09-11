@@ -1,0 +1,4 @@
+# Fichier géré par Ansible
+{% for export in nfs_exports %}
+{{ export.path }} {{ nfs_allowed_cidr }}({{ export.opts }})
+{% endfor %}

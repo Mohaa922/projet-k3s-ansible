@@ -1,0 +1,10 @@
+cat <<EOF > .gitignore
+*.retry
+*.log
+*.tmp
+.kube/
+.kube/config
+__pycache__/
+*.pyc
+.env
+EOF

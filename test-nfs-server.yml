@@ -1,0 +1,14 @@
+# test-nfs-server.yml
+---
+- name: TEST - Rôle nfs_server
+  hosts: nfs_server
+  become: yes
+  vars:
+    nfs_allowed_cidr: "10.0.1.0/24"  # ou ton vrai réseau interne
+    nfs_exports:
+      - path: /srv/nfs/jenkins
+        opts: rw,sync,no_subtree_check
+      - path: /srv/nfs/mysql
+        opts: rw,sync,no_root_squash
+  roles:
+    - nfs_server
