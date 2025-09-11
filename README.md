@@ -12,6 +12,6 @@ Ce projet déploie une infrastructure complète :
 - \`ansible/\` → playbooks d'installation
 - \`roles/\` → rôles Ansible NFS
 - \`k3s/\` → manifestes Kubernetes (MySQL, WordPress, Jenkins)
-- \`monitoring/\` → à compléter
+- \`monitoring/\` → Prometheus + Grafana
 - \`Jenkinsfile\` → pipeline de déploiement
 EOF
