@@ -10,8 +10,9 @@ Ce projet déploie une infrastructure complète :
 
 ## Structure
 - \`ansible/\` → playbooks d'installation
-- \`roles/\` → rôles Ansible NFS
+- \`ansible/`roles/\` → rôles Ansible NFS
+- \`ansible/inventory\` → Declaration hosts noeuds (k3s-master,k3s-worker1,k3s-worker2)
 - \`k3s/\` → manifestes Kubernetes (MySQL, WordPress, Jenkins)
 - \`monitoring/\` → Prometheus + Grafana
-- \`Jenkinsfile\` → pipeline de déploiement
+-  \`Jenkinsfile\` → pipeline de déploiement
 EOF
