@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'test', credentialsId: 'github-token', url: 'https://github.com/Mohaa922/projet-k3s-ansible.git'
+                git branch: 'test', credentialsId: 'github-secret', url: 'https://github.com/Mohaa922/projet-k3s-ansible.git'
             }
         }
 
