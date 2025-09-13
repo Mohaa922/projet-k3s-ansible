@@ -1,70 +1,54 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    IMAGE_NAME = "mohaa922/wordpress-k3s" // à adapter avec ton compte Docker Hub
-    KUBECONFIG = credentials('KUBECONFIG_DEV')
-    NAMESPACE = "mjallouli-project1"
-    DOMAIN = "wp.20.162.255.135.nip.io"
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-        git url: 'https://github.com/Mohaa922/projet-k3s-ansible.git', branch: 'test'
-      }
+    environment {
+        IMAGE_NAME = "mohaa922/wordpress-k3s" // Remplace si nécessaire
     }
 
-    stage('Build Docker Image') {
-      steps {
-        sh "docker build -t ${IMAGE_NAME}:latest -f Dockerfile ."
-      }
-    }
-
-    stage('Push Docker Image') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-          sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
-          sh "docker push ${IMAGE_NAME}:latest"
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'test', credentialsId: 'github-token', url: 'https://github.com/Mohaa922/projet-k3s-ansible.git'
+            }
         }
-      }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${IMAGE_NAME}:latest -f Dockerfile ."
+            }
+        }
+
+        stage('Push to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                    sh "docker push ${IMAGE_NAME}:latest"
+                }
+            }
+        }
+
+        stage('Déployer WordPress sur K3s') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                    sh 'kubectl apply -f k3s/wordpress/'
+                }
+            }
+        }
+
+        stage('Vérifier WordPress') {
+            steps {
+                sh 'kubectl get pods -n mjallouli-project1'
+                sh 'curl -I http://wp.20.162.255.135.nip.io || true'
+            }
+        }
     }
 
-    stage('Déployer WordPress sur K8s') {
-      steps {
-        sh '''
-          kubectl apply -f k3s/mysql/mysql-pv-pvc.yml -n $NAMESPACE
-          kubectl apply -f k3s/mysql/mysql-service.yml -n $NAMESPACE
-          kubectl apply -f k3s/mysql/mysql-deployment.yml -n $NAMESPACE
-
-          kubectl apply -f k3s/wordpress/wordpress-pv-pvc.yml -n $NAMESPACE
-          kubectl apply -f k3s/wordpress/wordpress-configmap.yml -n $NAMESPACE
-          kubectl apply -f k3s/wordpress/wordpress-service.yml -n $NAMESPACE
-          kubectl apply -f k3s/wordpress/wordpress-deployment.yml -n $NAMESPACE
-          kubectl apply -f k3s/wordpress/ingress.yml -n $NAMESPACE
-        '''
-      }
+    post {
+        failure {
+            echo "❌ Échec de la pipeline. Vérifie les logs."
+        }
+        success {
+            echo "✅ Déploiement WordPress terminé avec succès."
+        }
     }
-
-    stage('Vérifier WordPress') {
-      steps {
-        sh '''
-          echo "Attente 30s que les pods démarrent..."
-          sleep 30
-
-          echo "Tester accès WordPress :"
-          curl -I http://$DOMAIN || true
-        '''
-      }
-    }
-  }
-
-  post {
-    success {
-      echo '✅ Pipeline terminée avec succès. WordPress est en ligne !'
-    }
-    failure {
-      echo '❌ Échec de la pipeline. Vérifie les logs.'
-    }
-  }
 }
