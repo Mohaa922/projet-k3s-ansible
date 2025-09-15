@@ -11,7 +11,7 @@ pipeline {
   stages {
     stage('Checkout') {
       steps {
-        git url: 'https://github.com/Mohaa922/projet-k3s-ansible.git', branch: 'main'
+        git url: 'https://github.com/Mohaa922/projet-k3s-ansible.git', branch: 'test'
       }
     }
 
