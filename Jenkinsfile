@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "mohaa922/wordpress-k3s" // Remplace si nécessaire
+        IMAGE_NAME = "mohaa9222/wordpress-k3s" // Remplace si nécessaire
     }
 
     stages {
