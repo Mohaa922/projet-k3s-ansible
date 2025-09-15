@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    IMAGE_NAME = "mohaa922/wordpress-k3s" // à adapter avec ton compte Docker Hub
+    IMAGE_NAME = "mohaa9222/wordpress-k3s" // à adapter avec ton compte Docker Hub
     KUBECONFIG = credentials('KUBECONFIG_DEV')
     NAMESPACE = "mjallouli-project1"
     DOMAIN = "wp.20.162.255.135.nip.io"
