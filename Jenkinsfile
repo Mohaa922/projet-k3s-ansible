@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "mohaa9222/wordpress-k3s" // Remplace si nécessaire
+        IMAGE_NAME = "mohaa9222/wordpress-k3s" // Docker Hub image name
+        NAMESPACE = "mjallouli-project1"
+        DOMAIN = "wp.20.162.255.135.nip.io"
     }
 
     stages {
@@ -29,16 +31,23 @@ pipeline {
 
         stage('Déployer WordPress sur K3s') {
             steps {
-                withCredentials([file(credentialsId: 'KUBECONFIG_DEV', variable: 'KUBECONFIG')]) {
-                    sh 'kubectl apply -f k3s/wordpress/'
+                withCredentials([string(credentialsId: 'KUBECONFIG_DEV', variable: 'KUBECONFIG_CONTENT')]) {
+                    sh '''
+                        echo "$KUBECONFIG_CONTENT" > kubeconfig.yaml
+                        export KUBECONFIG=$PWD/kubeconfig.yaml
+                        kubectl apply -f k3s/wordpress/ -n $NAMESPACE
+                    '''
                 }
             }
         }
 
         stage('Vérifier WordPress') {
             steps {
-                sh 'kubectl get pods -n mjallouli-project1'
-                sh 'curl -I http://wp.20.162.255.135.nip.io || true'
+                sh '''
+                    export KUBECONFIG=$PWD/kubeconfig.yaml
+                    kubectl get pods -n $NAMESPACE
+                    curl -I http://$DOMAIN || true
+                '''
             }
         }
     }
