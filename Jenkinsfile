@@ -33,7 +33,7 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: 'KUBECONFIG_DEV', variable: 'KUBECONFIG_CONTENT')]) {
                     sh '''
-                        echo "$KUBECONFIG_CONTENT" > kubeconfig.yaml
+                        echo -e "$KUBECONFIG_CONTENT" > kubeconfig.yaml
                         export KUBECONFIG=$PWD/kubeconfig.yaml
                         kubectl apply -f k3s/wordpress/ -n $NAMESPACE
                     '''
