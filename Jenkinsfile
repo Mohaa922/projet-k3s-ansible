@@ -29,7 +29,7 @@ pipeline {
 
         stage('Déployer WordPress sur K3s') {
             steps {
-                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                withCredentials([file(credentialsId: 'KUBECONFIG_DEV', variable: 'KUBECONFIG')]) {
                     sh 'kubectl apply -f k3s/wordpress/'
                 }
             }
