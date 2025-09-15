@@ -1,12 +1,8 @@
-FROM wordpress:latest
+FROM wordpress:php8.2-apache
 
-# Copie des plugins et thèmes WordPress personnalisés (si tu en as)
-# Assure-toi que ces dossiers existent, sinon commente ces lignes
-# COPY plugins/ /var/www/html/wp-content/plugins/
-# COPY themes/ /var/www/html/wp-content/themes/
+# Copie des fichiers WordPress personnalisés (facultatif)
+# COPY ./wordpress /var/www/html/
 
-# Tu peux aussi personnaliser des paramètres PHP ou Apache ici si besoin
+# Configuration supplémentaire si besoin (plugins, thèmes, etc.)
 
-# Assure-toi que les permissions sont correctes
-RUN chown -R www-data:www-data /var/www/html
-
+EXPOSE 80
