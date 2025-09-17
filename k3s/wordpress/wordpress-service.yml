@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: wordpress-service
+  name: wordpress  # ✅ même nom que celui dans l'Ingress
   namespace: mjallouli-project1
 spec:
   selector:
@@ -10,5 +10,4 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 80
-    nodePort: 30081
-  type: NodePort
+  type: ClusterIP  # ✅ Suffisant pour l’Ingress, plus propre que NodePort
